@@ -8,6 +8,9 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <chrono>
+#include <thread>
+#include <time.h>
 using namespace std;
 
 #include "SimConnect.h"
@@ -226,6 +229,7 @@ void inject_weather(vector<vector<string>> stations, vector<vector<string>> curr
             string id = stations.at(0).at(i);
             string metar = current_wx.at(2).at(i);
             
+            
             if (id[0] == '$') {
                 id = gen_code(i);
                 metar = id;
@@ -238,10 +242,10 @@ void inject_weather(vector<vector<string>> stations, vector<vector<string>> curr
             }
             
         }
-        printf("All stations updated! \nPlease keep window open...\n");
+        printf("All stations updated! \nPlease keep this window open...\n");
         
         SimConnect_WeatherSetModeCustom(hSimConnect);
-        while (1);
+      
 
     }
     else
@@ -287,13 +291,44 @@ void inject_test() {
         printf("not connected to SIM !");
 }
 
+//Start autosave at requested interval
+void start_timer(int delay) {
+    std::chrono::minutes minutes(delay);
+    HRESULT hr = NULL;
+    int k = 0;
+    time_t my_time = time(NULL);
+    while (true) {
+        std::this_thread::sleep_for(minutes);
+      
+       
+        string file = "./wx2fs_save_" + to_string(k % 3);
+        string name = "Wx2fs_save_" + std::format("{:%R}",
+            std::chrono::zoned_time{ std::chrono::current_zone(),
+                                    std::chrono::system_clock::now() });
+        string descr = "Saved : " + std::format("{:%F %R}",
+            std::chrono::zoned_time{ std::chrono::current_zone(),
+                                    std::chrono::system_clock::now() });
+       
+        hr = SimConnect_FlightSave(hSimConnect,file.c_str(), name.c_str(), descr.c_str(), 1);
+       if (hr == S_OK)
+           cout << "Saved : "<< std::format("{:%R}",
+               std::chrono::zoned_time{ std::chrono::current_zone(),
+                                       std::chrono::system_clock::now() }) << "\n";
+       else
+           cout << "Error !?";
+       k++;
+
+    }
+}
+
 
 
 int main()
 {
+
     std::cout << "OPEN THIS SCRIPT BEFORE LOADING THE FLIGHT\n";
     std::cout << "Importing data from output folder...\n";
- 
+
     //Reads and cleans file data
     vector<string> stations_raw = parse_file("./output/wx_station_list.txt");
     //cout << stations_raw.at(3000) <<"\n";
@@ -319,6 +354,15 @@ int main()
     //Injects the weather
     inject_weather(stations,current_wx);
     //inject_test();
+
+    cout << "Enter an autosave interval in minutes (optionnal) :";
+   
+    int delay;
+    cin >> delay;
+    if (delay < 1)
+        delay = 1;
+    cout << "The game will now be saved every " << delay << " minutes...\n";
+    start_timer(delay);
 
  
 }
