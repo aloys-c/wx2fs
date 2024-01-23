@@ -59,6 +59,45 @@ vector <string> parse_line(string line, char delim) {
 
 }
 
+string get_code(int number) {
+    vector<char> dic = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z' };
+    vector<char> prefix = { 'I','J','X','Q' };
+    vector<int> div = { 46656,1296,36 };
+    vector<int> index(4);
+
+    index.at(0) = number / div.at(0);
+    index.at(1) = (number - index.at(0) * div.at(0)) / div.at(1);
+    index.at(2) = (number - index.at(0) * div.at(0) - index.at(1) * div.at(1)) / div.at(2);
+    index.at(3) = number - index.at(0) * div.at(0) - index.at(1) * div.at(1) - index.at(2) * div.at(2);
+    // cout << index.at(0) << " " << index.at(1) << " " << index.at(2) << " " << index.at(3) << '\n';
+    string out;
+    out += prefix.at(index.at(0));
+    out += dic.at(index.at(1));
+    out += dic.at(index.at(2));
+    out += dic.at(index.at(3));
+
+    return out;
+}
+
+string removeWord(string str, string word)
+{
+
+    if (str.find(word) != string::npos) {
+        size_t p = -1;
+
+
+        string tempWord = word + " ";
+        while ((p = str.find(word)) != string::npos)
+            str.replace(p, tempWord.length(), "");
+
+
+        tempWord = " " + word;
+        while ((p = str.find(word)) != string::npos)
+            str.replace(p, tempWord.length(), "");
+    }
+    return str;
+}
+
 vector<vector<string>> split(vector<string> lines,int num_col, char delim)
 {
     string str;
@@ -122,8 +161,16 @@ vector<string> format_winds(vector<string> winds_raw,int n_layers) {
 }
 
 vector<string> format_metar(vector<string> metars) {
+    int len = metars.capacity();
+    for (int i = 0; i < len; i++) {
+        metars.at(i) = removeWord(metars.at(i), "AUTO");
+    }
+
     return metars;
 }
+
+
+
 
 
 void inject_weather(vector<vector<string>> stations, vector<vector<string>> current_wx) {
@@ -139,15 +186,16 @@ void inject_weather(vector<vector<string>> stations, vector<vector<string>> curr
             string metar = current_wx.at(2).at(i);
             
             if (id[0] == '$') {
-                id[0] = 'D';
+                id = get_code(i);
                 metar = id;
             }
-            
-            hr = SimConnect_WeatherCreateStation(hSimConnect, 1, id.c_str(), id.c_str(), stof(stations.at(1).at(i)), stof(stations.at(2).at(i)), 0.0F);
-            string  str = metar + " " + current_wx.at(6).at(i);
-            //if (i == 10929)
-               // printf(str.c_str());
-            hr = SimConnect_WeatherSetObservation(hSimConnect, 0, str.c_str());
+            if (metar != "*") {
+                hr = SimConnect_WeatherCreateStation(hSimConnect, 1, id.c_str(), id.c_str(), stof(stations.at(1).at(i)), stof(stations.at(2).at(i)), 0.0F);
+                string  str = metar + " " + current_wx.at(6).at(i);
+                //if (i == 10929)
+                   // printf(str.c_str());
+                hr = SimConnect_WeatherSetObservation(hSimConnect, 0, str.c_str());
+            }
             
         }
         printf("All stations updated! \nPlease keep window open...\n");
@@ -207,7 +255,8 @@ int main()
 {
     std::cout << "OPEN THIS SCRIPT BEFORE LOADING THE FLIGHT\n";
     std::cout << "Importing data from output folder...\n";
-    
+ 
+
     vector<string> stations_raw = parse_file("./output/wx_station_list.txt");
    // cout << stations_raw.at(3000) <<"\n";
     vector<string> current_wx_raw = parse_file("./output/current_wx_snapshot.txt");
