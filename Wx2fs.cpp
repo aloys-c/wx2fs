@@ -1,7 +1,6 @@
-// InjectTest.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+// Wx2fs.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
-#include <iostream>
+
 
 #include <windows.h>
 #include <iostream>
@@ -11,9 +10,6 @@
 #include <vector>
 using namespace std;
 
-
-
-
 #include "SimConnect.h"
 
 int     quit = 0;
@@ -22,10 +18,14 @@ HANDLE  hSimConnect = NULL;
 static vector<string> layer_alt = { "85","197","325","395","601","777","986","1117","1268" };
 
 
-vector<string> parse_file(string name)
+/* Generic functions  */
+
+
+//Returns a vector with every line of the inputed file
+vector<string> parse_file(string path)
 {
     vector<string> lines;
-    string inFileName = name;
+    string inFileName = path;
     ifstream inFile;
     inFile.open(inFileName.c_str());
     if (inFile.is_open())
@@ -45,6 +45,7 @@ vector<string> parse_file(string name)
 
 }
 
+//Split given string line at separator
 vector <string> parse_line(string line, char delim) {
     vector<string> out;
     string str;
@@ -59,7 +60,9 @@ vector <string> parse_line(string line, char delim) {
 
 }
 
-string get_code(int number) {
+
+//Returns a unique 4 letter code coresponding to an index
+string gen_code(int number) {
     vector<char> dic = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z' };
     vector<char> prefix = { 'I','J','X','Q' };
     vector<int> div = { 46656,1296,36 };
@@ -79,6 +82,8 @@ string get_code(int number) {
     return out;
 }
 
+
+//Removes a given word from a string
 string removeWord(string str, string word)
 {
 
@@ -86,7 +91,7 @@ string removeWord(string str, string word)
         size_t p = -1;
 
 
-        string tempWord = word + " ";
+        string tempWord = word + "";//removed space
         while ((p = str.find(word)) != string::npos)
             str.replace(p, tempWord.length(), "");
 
@@ -98,7 +103,9 @@ string removeWord(string str, string word)
     return str;
 }
 
-vector<vector<string>> split(vector<string> lines,int num_col, char delim)
+
+//Splits a vector of strings into multiple vector columns at given separator
+vector<vector<string>> split_vector(vector<string> lines,int num_col, char delim)
 {
     string str;
     int len = lines.capacity();
@@ -132,13 +139,41 @@ vector<vector<string>> split(vector<string> lines,int num_col, char delim)
     return output; 
 }
 
+
+
+/* APP specific functions   */
+
+//Cleans the raw lines, (removes single : separator)
+vector<string> clean_raw_lines(vector<string> lines) {
+
+    int len = lines.capacity();
+    int N;
+    for (int i = 0; i < len; i++) {
+        string line = lines.at(i);
+        N = line.length();
+        for (int k = 0; k < N; k++) {
+            if (line[k] == ':') {
+                if (line[k + 1] != ':')
+                    line[k] = ' ';
+                else
+                    k++;
+            }
+        }
+        lines.at(i) = line;
+
+    }
+    return lines;
+}
+
+
+//Change the format of the wind
 vector<string> format_winds(vector<string> winds_raw,int n_layers) {
     
     int len = winds_raw.capacity();
     //cout << len << "\n";
     vector<string> out(len);
     vector<string> layer(n_layers);
-    vector<vector<string>> winds = split(winds_raw, n_layers, '/');
+    vector<vector<string>> winds = split_vector(winds_raw, n_layers, '/');
     //cout << winds.capacity() << "\n";
     for (int i = 0; i < len; i++) {
         layer.clear();
@@ -160,19 +195,25 @@ vector<string> format_winds(vector<string> winds_raw,int n_layers) {
 
 }
 
+
+//Cleans metar data
 vector<string> format_metar(vector<string> metars) {
     int len = metars.capacity();
     for (int i = 0; i < len; i++) {
-        metars.at(i) = removeWord(metars.at(i), "AUTO");
+        metars.at(i) = removeWord(metars.at(i), "AUTO ");
+        metars.at(i) = removeWord(metars.at(i), "$");
+        metars.at(i) = removeWord(metars.at(i), "//////");
+        metars.at(i) = removeWord(metars.at(i), "TCU");
+        metars.at(i) = removeWord(metars.at(i), " ///");
+        metars.at(i) = removeWord(metars.at(i), "CB");
+        metars.at(i) = removeWord(metars.at(i), "NCD ");
     }
 
     return metars;
 }
 
 
-
-
-
+//Injects the data into the sim
 void inject_weather(vector<vector<string>> stations, vector<vector<string>> current_wx) {
     HRESULT hr = NULL;
     if (SUCCEEDED(SimConnect_Open(&hSimConnect, "Weather Station", NULL, 0, 0, 0)))
@@ -186,14 +227,13 @@ void inject_weather(vector<vector<string>> stations, vector<vector<string>> curr
             string metar = current_wx.at(2).at(i);
             
             if (id[0] == '$') {
-                id = get_code(i);
+                id = gen_code(i);
                 metar = id;
             }
             if (metar != "*") {
                 hr = SimConnect_WeatherCreateStation(hSimConnect, 1, id.c_str(), id.c_str(), stof(stations.at(1).at(i)), stof(stations.at(2).at(i)), 0.0F);
                 string  str = metar + " " + current_wx.at(6).at(i);
-                //if (i == 10929)
-                   // printf(str.c_str());
+             
                 hr = SimConnect_WeatherSetObservation(hSimConnect, 0, str.c_str());
             }
             
@@ -209,10 +249,7 @@ void inject_weather(vector<vector<string>> stations, vector<vector<string>> curr
 }
 
 
-
-
-
-
+//Just a test function to inject data in the sim and see how it behave
 void inject_test() {
     HRESULT hr = NULL;
 
@@ -220,8 +257,9 @@ void inject_test() {
     if (SUCCEEDED(SimConnect_Open(&hSimConnect, "Weather Station", NULL, 0, 0, 0)))
     {
         DWORD delay_weather = 0;
-        const char* metar = "LSGG 030405Z 27007KT 15SM SKC 17/13 Q1000";
-        printf("\nConnected to simulator!");                           //LSGG 220855Z 10006G13KT 10SM OVC032 M01/M04 A3020 RMK AO28 @@@ 65 25 270 20 | 196 5 090 125 | 340 -50 180 190
+        printf("\nConnected to simulator!");                           
+        
+        //LSGG 220855Z 10006G13KT 10SM OVC032 M01/M04 A3020 RMK AO28 @@@ 65 25 270 20 | 196 5 090 125 | 340 -50 180 190
             
         for (int i = 0; i < 10; i++) {
             hr = SimConnect_WeatherCreateStation(hSimConnect, 1, ("D00"+std::to_string(i)).c_str(), ("D00" + std::to_string(i)).c_str(), 46.5F + float(i)/10, 6.6F, 0.0F);
@@ -256,28 +294,32 @@ int main()
     std::cout << "OPEN THIS SCRIPT BEFORE LOADING THE FLIGHT\n";
     std::cout << "Importing data from output folder...\n";
  
-
+    //Reads and cleans file data
     vector<string> stations_raw = parse_file("./output/wx_station_list.txt");
-   // cout << stations_raw.at(3000) <<"\n";
+    //cout << stations_raw.at(3000) <<"\n";
     vector<string> current_wx_raw = parse_file("./output/current_wx_snapshot.txt");
-    //cout << current_wx_raw.at(3000) << "\n";
+    //cout << current_wx_raw.at(10260) << "\n";
+    current_wx_raw = clean_raw_lines(current_wx_raw);
+    //cout << current_wx_raw.at(10260) << "\n";
 
-    vector<vector<string>> stations = split(stations_raw,4, ',');
-    vector<vector<string>> current_wx = split(current_wx_raw,7, ':');
-   
-
-   // cout << stations.at(2).at(3000) << "\n";
-    //cout << current_wx.at(6).at(10260) << "\n";
+    //Refactor data
+    vector<vector<string>> stations = split_vector(stations_raw,4, ',');
+    vector<vector<string>> current_wx = split_vector(current_wx_raw,7, ':');
+    //cout << stations.at(2).at(3000) << "\n";
     //cout << current_wx.at(6).at(3000) << "\n";
+    
+    
+    //Clean and format data
     current_wx.at(6) = format_winds(current_wx.at(6),9);
     //cout << current_wx.at(6).at(3000) << "\n";
     current_wx.at(2) = format_metar(current_wx.at(2));
+    //cout << current_wx.at(2).at(11773) << "\n";
+    
+    
+    //Injects the weather
     inject_weather(stations,current_wx);
-
-
-    //cout << winds_raw.at(8).at(3000) << "\n";
-   
-
     //inject_test();
+
+ 
 }
 
