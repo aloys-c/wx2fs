@@ -1,5 +1,5 @@
 # Wx2fs (wx2pfpx extension) + Autosave function
-Simplest script to inject weather data in SimConnect(v.10.0.61259.0 or FSX_XPACK) compatible simulator (FSX, P3D) from the output of wx2pfpx. This is a a very basic weather engine solution to allow to get enroute winds and ground weather at airports (for which the metar is available) for IFR flight where visual realism it not important.
+Simple script to inject weather data in SimConnect(v.10.0.61259.0 or FSX_XPACK) compatible simulator (FSX, P3D) from the output of wx2pfpx. This is a a very basic weather engine solution to allow to get enroute winds and ground weather at airports (for which the metar is available) for IFR flight where visual realism it not important.
 
 ## How to use :
 - The executable must be in the same folder as the output folder from wx2pfpx, it will take the selected dataset on the wx2pfpx app.
