@@ -17,8 +17,9 @@ using namespace std;
 
 int     quit = 0;
 HANDLE  hSimConnect = NULL;
-//static vector<string> layer_alt = { "26","60","98","120","183","236","300","340","386" };
-static vector<string> layer_alt = { "85","197","325","395","601","777","986","1117","1268" };
+//static vector<string> layer_alt = { "30","60","90","120","180","240","300","340","390" }; //This is the measurement altitude
+static vector<string> layer_alt = { "45","75","105","150","210","270","320","365","415" }; //This is the "top of the wind layer"
+
 
 
 /* Generic functions  */
@@ -361,7 +362,7 @@ int main()
     cin >> delay;
     if (delay < 1)
         delay = 1;
-    cout << "The game will now be saved every " << delay << " minutes...\n";
+    cout << "The sim will now be saved every " << delay << " minutes...\n";
     start_timer(delay);
 
  
