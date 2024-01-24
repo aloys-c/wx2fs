@@ -210,6 +210,7 @@ vector<string> format_metar(vector<string> metars) {
         metars.at(i) = removeWord(metars.at(i), " ///");
         metars.at(i) = removeWord(metars.at(i), "CB");
         metars.at(i) = removeWord(metars.at(i), "NCD ");
+        metars.at(i) = removeWord(metars.at(i), "NSC ");
     }
 
     return metars;
@@ -228,7 +229,6 @@ void inject_weather(vector<vector<string>> stations, vector<vector<string>> curr
         for (int i = 0; i < len; i++) {
             string id = stations.at(0).at(i);
             string metar = current_wx.at(2).at(i);
-            
             
             if (id[0] == '$') {
                 id = gen_code(i);
@@ -271,7 +271,7 @@ void inject_test() {
         for (int i = 0; i < 10; i++) {
 
             string  str = "D00"+std::to_string(i)+" 220855Z 10006G13KT 10SM OVC032 0"+std::to_string(i)+"/M04 Q1000 RMK AO28 @@@ 65 25 270 20 | 196 5 090 125 | 340 -50 180 190";
-            if(i==10929)
+            if(i==10646)
                 printf(str.c_str());
             hr = SimConnect_WeatherSetObservation(hSimConnect, 0, str.c_str());
 
