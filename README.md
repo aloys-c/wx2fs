@@ -4,9 +4,9 @@ Simple script to inject weather data in SimConnect(v.10.0.61259.0 or FSX_XPACK) 
 ## How to use :
 - The executable must be in the same folder as the output folder from wx2pfpx, it will take the selected dataset on the wx2pfpx app.
 - Run the script after the simulator is started, but before loading a flight. The window must be kept open (or minimized) to maintain the weather active in the sim.
-- Closing the script might make your sim crash, also some lag is expected at loading (Whole map is loaded at once.).
-- While the script is open it can be used to autosave the game at desired time interval (optionnal).
-- When using full grid, set the config to include also the airports data and also set the grid to a resolution of 1.
+- Closing the script might make your sim crash, also some short lag is expected at loading (whole map is loaded at once.).
+- While the script is open, it can be used to autosave the game at a desired time interval (optionnal).
+- When using full grid, set the config to include also the airports data and also set the grid to a resolution of 1 to avoid overloading the map.
 
 
 ## How it works :
