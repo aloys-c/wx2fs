@@ -100,7 +100,7 @@ string removeWord(string str, string word)
             str.replace(p, tempWord.length(), "");
 
 
-        tempWord = " " + word;
+        tempWord = "" + word;//removed space
         while ((p = str.find(word)) != string::npos)
             str.replace(p, tempWord.length(), "");
     }
@@ -209,9 +209,15 @@ vector<string> format_metar(vector<string> metars) {
         metars.at(i) = removeWord(metars.at(i), "//////");
         metars.at(i) = removeWord(metars.at(i), "TCU");
         metars.at(i) = removeWord(metars.at(i), " ///");
-        metars.at(i) = removeWord(metars.at(i), "CB");
-        metars.at(i) = removeWord(metars.at(i), "NCD ");
-        metars.at(i) = removeWord(metars.at(i), "NSC ");
+        metars.at(i) = removeWord(metars.at(i), " CB");
+        metars.at(i) = removeWord(metars.at(i), " NCD");
+        metars.at(i) = removeWord(metars.at(i), " NSC");
+        
+        string s = "RMK";
+        size_t p = -1;
+        if ((p = metars.at(i).find(s)) != string::npos) {
+            metars.at(i).erase(p, string::npos);
+        }
     }
 
     return metars;
@@ -219,15 +225,19 @@ vector<string> format_metar(vector<string> metars) {
 
 
 //Injects the data into the sim
-void inject_weather(vector<vector<string>> stations, vector<vector<string>> current_wx) {
+bool inject_weather(vector<vector<string>> stations, vector<vector<string>> current_wx) {
     HRESULT hr = NULL;
     if (SUCCEEDED(SimConnect_Open(&hSimConnect, "Weather Station", NULL, 0, 0, 0)))
     {
         printf("Connected to Flight Simulator!\n");
+        SimConnect_WeatherSetModeCustom(hSimConnect);
+
         DWORD delay_weather = 0;
         int len = stations.at(0).capacity();
-
+        
+        
         for (int i = 0; i < len; i++) {
+            
             string id = stations.at(0).at(i);
             string metar = current_wx.at(2).at(i);
             
@@ -235,22 +245,28 @@ void inject_weather(vector<vector<string>> stations, vector<vector<string>> curr
                 id = gen_code(i);
                 metar = id;
             }
-            if (metar != "*") {
+            if (metar != "*" ){//&& i != 6140 && i != 14326 && i != 12959 && i != 12205 && i != 11155 && i != 12194 && i != 12468) {
+                //cout << metar<<"\n";
                 hr = SimConnect_WeatherCreateStation(hSimConnect, 1, id.c_str(), id.c_str(), stof(stations.at(1).at(i)), stof(stations.at(2).at(i)), 0.0F);
                 string  str = metar + " " + current_wx.at(6).at(i);
              
                 hr = SimConnect_WeatherSetObservation(hSimConnect, 0, str.c_str());
             }
+
             
         }
         printf("All stations updated! \nPlease keep this window open...\n");
         
         SimConnect_WeatherSetModeCustom(hSimConnect);
+        return 1;
       
 
     }
-    else
-        printf("Couldn't connect to SIM !");
+    else {
+        printf("Couldn't connect to SIM !\n");
+        return 0;
+    }
+        
 }
 
 
@@ -284,12 +300,16 @@ void inject_test() {
             SimConnect_WeatherSetModeCustom(hSimConnect);
             //SimConnect_WeatherSetModeGlobal(hSimConnect);
 
-            printf("Sim weather updated, please keep window open...");
+            printf("Sim weather updated, please keep window open...\n");
             while (1);
      
     }   
-    else
-        printf("not connected to SIM !");
+    else {
+        printf("Not connected to SIM !\n");
+        
+
+    }
+        
 }
 
 //Start autosave at requested interval
@@ -353,17 +373,21 @@ int main()
     
     
     //Injects the weather
-    inject_weather(stations,current_wx);
+    bool success = inject_weather(stations,current_wx);
     //inject_test();
+    if (success)
+    {
+        cout << "Enter an autosave interval in minutes (optionnal) :";
 
-    cout << "Enter an autosave interval in minutes (optionnal) :";
-   
-    int delay;
-    cin >> delay;
-    if (delay < 1)
-        delay = 1;
-    cout << "The sim will now be saved every " << delay << " minutes...\n";
-    start_timer(delay);
+        int delay;
+        cin >> delay;
+        if (delay < 1)
+            delay = 1;
+        cout << "The flight will now be saved every " << delay << " minutes...\n";
+        start_timer(delay);
+    }
+    else
+        while (1);
 
  
 }
