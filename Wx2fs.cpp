@@ -206,12 +206,15 @@ vector<string> format_metar(vector<string> metars) {
     for (int i = 0; i < len; i++) {
         metars.at(i) = removeWord(metars.at(i), "AUTO ");
         metars.at(i) = removeWord(metars.at(i), "$");
-        metars.at(i) = removeWord(metars.at(i), "//////");
-        metars.at(i) = removeWord(metars.at(i), "TCU");
+        metars.at(i) = removeWord(metars.at(i), " //////");
+        metars.at(i) = removeWord(metars.at(i), "//// ");
         metars.at(i) = removeWord(metars.at(i), " ///");
+       metars.at(i) = removeWord(metars.at(i), " //");
+        metars.at(i) = removeWord(metars.at(i), " TCU");
         metars.at(i) = removeWord(metars.at(i), " CB");
         metars.at(i) = removeWord(metars.at(i), " NCD");
         metars.at(i) = removeWord(metars.at(i), " NSC");
+        metars.at(i) = removeWord(metars.at(i), " COR");
         
         string s = "RMK";
         size_t p = -1;
